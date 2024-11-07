@@ -1,0 +1,9 @@
+__pycache__
+!.venv/Lib/site-packages/
+.venv/Lib/site-packages/*
+!.venv/Lib/site-packages/interface_app/
+.venv/Include
+.venv/Scripts
+.venv/share
+.venv/pyvenv.cfg
+!.venv/Lib/site-packages/interface_app/Interface_app.py
