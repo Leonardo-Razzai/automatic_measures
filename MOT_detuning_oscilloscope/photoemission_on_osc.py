@@ -1,6 +1,8 @@
 from p4p.client.thread import Context
 import sys
 import numpy as np
+import pandas as pd
+
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer, QTime
 import pyqtgraph as pg
@@ -178,9 +180,17 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def save_osc(self):
         '''save data from oscilloscope'''
+        file_name = self.ui.save_osc_button.text()
+        data = np.array([self.x_osc, self.y_osc]).T
+        df = pd.DataFrame(data, columns=['Time [s]', 'Sig [V]'])
+        df.to_csv(file_name, index=False)
         
     def save_auto(self):
         '''save acquisition'''
+        file_name = self.ui.save_acquisition_button.text()
+        data = np.array([self.x_auto, self.y_auto]).T
+        df = pd.DataFrame(data, columns=['Time [s]', 'Sig [V]'])
+        df.to_csv(file_name, index=False)
         
 if __name__ == "__main__":
     ctx = Context('pva')
