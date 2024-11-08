@@ -193,8 +193,16 @@ class MainWindow(QtWidgets.QMainWindow):
         df.to_csv(file_name, index=False)
         
 if __name__ == "__main__":
-    ctx = Context('pva')
-    osc = iapp.Osc_RS()
+    
+    try:
+        ctx = Context('pva')
+        osc = iapp.Osc_RS()
+    except Exception as e:
+        # Handle any exception here
+        print(f"An error occurred: {e}")
+        ctx = None
+        osc = None
+
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow(ctx=ctx, osc=osc)
     window.show()
