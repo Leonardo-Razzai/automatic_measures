@@ -11,6 +11,8 @@ from plot_ui import Ui_MainWindow# Ensure this is the correct import for your UI
 from interface_app import Interface_app as iapp
 import time
 
+pm = "\u00B1"
+
 '''
 This program is meant to interface the oscilloscope and the cooler lock, in order to:
 - start and stop acqusitions on the oscilloscope
@@ -44,6 +46,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.time_range = DEFAULT_TIME_RANGE
         self.voltage_range = DEFAULT_VOLTAGE_RANGE
         
+        self.start_time_fit = 5.0 #s
+        self.end_time_fit = 10.0 # s
+        self.fit_params = None
+        self.fit_errors = None
+        
         '''PLOTS'''
         # Set up two separate plot widgets
         self.plot_widget_osc = pg.PlotWidget()
@@ -64,12 +71,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plot_widget_fit.setLabel('left', 'Voltage', units='V')  # y-axis
         self.plot_widget_fit.setLabel('bottom', 'Time', units='s')  # x-axis
 
-        # Set fixed range for both plots
+        # Set fixed range for plots
         self.plot_widget_osc.setRange(xRange=(0, DEFAULT_TIME_RANGE), yRange=(0, DEFAULT_VOLTAGE_RANGE))  # x -> time, y -> photovoltage
         self.plot_widget_auto.setRange(xRange=(0, DEFAULT_TIME_RANGE), yRange=(0, DEFAULT_VOLTAGE_RANGE))  # x -> detuning, y -> photovoltage
         self.plot_widget_fit.setRange(xRange=(0, DEFAULT_TIME_RANGE), yRange=(0, DEFAULT_VOLTAGE_RANGE))
         
-        # Initialize empty curves for real-time and acquisition
+        # Initialize empty curves
         self.curve_osc = self.plot_widget_osc.plot([], [], pen='r')  # Red line for real-time data
         self.curve_auto = self.plot_widget_auto.plot([], [], pen='b')  # Blue line for acquisition data
         self.curve_fit = self.plot_widget_fit.plot([], [], pen='b')  # Blue line for acquisition data
@@ -113,8 +120,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.num_atoms_button.clicked.connect(self.compute_num_atoms)
         
         # Tab Fit
-        self.ui.set_start_time_fit_button.clicked.connect(self.set_start_time_for_fit)
+        self.ui.set_range_time_fit_button.clicked.connect(self.set_range_time_for_fit)
         self.ui.fit_button.clicked.connect(self.fit_data)
+        self.ui.save_data_fit_button.clicked.connect(self.save_data_fit)
         
     def set_beat_note_freq(self):
         '''Set Cooler frequency with value from UI'''
@@ -181,19 +189,73 @@ class MainWindow(QtWidgets.QMainWindow):
         self.curve_osc.setData(self.x_osc, self.y_osc) # time in s, voltage in V
     
     
-    def set_start_time_for_fit(self):
+    def set_range_time_for_fit(self):
         '''Set time from which starting the fitting'''
         self.start_time_fit = self.ui.start_time_fit_box.value()
-        print(f'start time = {self.start_time_fit}')
+        self.end_time_fit = self.ui.end_time_fit_box.value()
+        print(f'Set fit time range: \n - Start Time = {self.start_time_fit} \n - End Time = {self.end_time_fit}')
         
     def fit_data(self):
-        """Fit the data from the oscilloscope with an exponential"""
+        """Fit the data from the oscilloscope with an exponential and plot the result."""
+        # Select data for fitting based on start time
+        index_fit = (self.x_auto > self.start_time_fit) * (self.x_auto < self.end_time_fit)
+        x_data = self.x_auto[index_fit] - self.start_time_fit
+        y_data = self.y_auto[index_fit]
+        
+        # Define initial parameter guesses
+        sat_guess = np.mean(y_data)
+        tau_guess = 2  # s
+        offset_guess = np.min(self.y_auto)  # Set offset close to minimum value
+        
+        # Perform curve fitting with initial guesses
+        p0 = [sat_guess, tau_guess, offset_guess]
+        popt, pcov = curve_fit(charge_MOT, x_data, y_data, p0=p0)
+        V0, tau, off = popt
+        dV0, dtau, doff = np.sqrt(np.diag(pcov))  # Uncertainties in fit parameters
+        
+        print(f'\n V0 = ({V0:.4f} {pm} {dV0:.4f}) V \n tau = ({tau:.4f} {pm} {dtau:.4f}) s \n offset = ({off:.4f} {pm} {doff:.4f}) V')
+        
+        # Generate fitted curve data
+        self.x_fit = x_data + self.start_time_fit  # Shift back to original time axis
+        self.y_fit = charge_MOT(x_data, *popt)
+        
+        # Plot the fit on the dedicated fit plot widget
+        self.plot_fit()
+        
+        self.fit_params = popt
+        self.fit_errors = np.sqrt(np.diag(pcov))
 
     def plot_fit(self):
-        """Plot fit over data"""
+        """Plot the fitted curve over the acquired data in the fit plot widget."""
+        # Plot the acquired data (x_auto, y_auto) in the fit plot widget
+        self.plot_widget_fit.clear()  # Clear any previous data or fits
+        self.plot_widget_fit.plot(self.x_auto, self.y_auto, pen='b', name="Data")  # Original data in blue
+        
+        # Plot the fitted curve over the data
+        self.plot_widget_fit.plot(self.x_fit, self.y_fit, pen='r', name="Fit")  # Fit in red
+    
+    def plot_fit_over_data(self):
+        """Plot the fitted curve over the acquired data in the fit plot widget."""
+        # Plot the acquired data (x_auto, y_auto) in the fit plot widget
+        self.plot_widget_auto.clear()  # Clear any previous data or fits
+        self.plot_widget_auto.plot(self.x_auto, self.y_auto, pen='b', name="Data")  # Original data in blue
+        
+        # Plot the fitted curve over the data
+        self.plot_widget_auto.plot(self.x_fit, self.y_fit, pen='r', name="Fit")  # Fit in red
+
+    def save_data_fit(self):
+        '''save data from oscilloscope'''
+        file_name = self.ui.file_name_fit_input.text()
+        data = np.array([self.fit_params, self.fit_errors])
+        df = pd.DataFrame(data, columns=['V0 [V]', 'tau [s]', 'off [V]'])
+        df.to_csv(file_name, index=False)
+        time.sleep(0.5)
+        self.ui.file_name_fit_input.clear()
     
     def compute_num_atoms(self):
         """Compute num of atoms from photo-voltage"""
+        self.fit_data()
+        self.plot_fit_over_data
         
     def auto_acquisition_osc(self):
         try:
@@ -213,7 +275,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.osc.Start_acquisition()
             
             time.sleep(time_to_resonance)
-            self.go_to_resonance()
+            if self.ui.swipe_to_res_checkBox.isChecked():
+                self.go_to_resonance()
+                print('Freq set to resonance')
             
             time.sleep(acquisition_time - time_to_resonance + 1)
             self.x_auto, self.y_auto = self.get_data_osc()
@@ -221,6 +285,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.go_to_optimal()
             
         except Exception as e:
+            
+            if self.ui.swipe_to_res_checkBox.isChecked():
+                print('Freq set to resonance')
+                
             print('Using test data')
             x_data = np.linspace(0, self.time_range, 200)
             t0 = 0.01 * np.random.randn() + self.time_range / 2
