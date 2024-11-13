@@ -213,6 +213,9 @@ class MainWindow(QtWidgets.QMainWindow):
         V0, tau, off = popt
         dV0, dtau, doff = np.sqrt(np.diag(pcov))  # Uncertainties in fit parameters
         
+        self.fit_params = popt
+        self.fit_errors = np.sqrt(np.diag(pcov))
+        
         print(f'\n V0 = ({V0:.4f} {pm} {dV0:.4f}) V \n tau = ({tau:.4f} {pm} {dtau:.4f}) s \n offset = ({off:.4f} {pm} {doff:.4f}) V')
         
         # Generate fitted curve data
@@ -221,14 +224,27 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # Plot the fit on the dedicated fit plot widget
         self.plot_fit()
-        
-        self.fit_params = popt
-        self.fit_errors = np.sqrt(np.diag(pcov))
 
     def plot_fit(self):
         """Plot the fitted curve over the acquired data in the fit plot widget."""
         # Plot the acquired data (x_auto, y_auto) in the fit plot widget
         self.plot_widget_fit.clear()  # Clear any previous data or fits
+         # Create or update the TextItem with fit results
+        V0, tau, off = self.fit_params
+        dV0, dtau, doff = self.fit_errors 
+        
+        fit_results_text = (
+            f"V0 = ({V0:.4f} {pm} {dV0:.4f}) V\n"
+            f"tau = ({tau:.4f} {pm} {dtau:.4f}) s\n"
+            f"offset = ({off:.4f} {pm} {doff:.4f}) V"
+        )
+        
+        self.fit_text_item = pg.TextItem(fit_results_text, anchor=(0, 1), color='w', border='w', fill='k')
+        self.plot_widget_fit.addItem(self.fit_text_item)
+
+        # Adjust the position of the TextItem on the plot to ensure visibility
+        self.fit_text_item.setPos(0, 0.75 * self.voltage_range)
+
         self.plot_widget_fit.plot(self.x_auto, self.y_auto, pen='b', name="Data")  # Original data in blue
         
         # Plot the fitted curve over the data
@@ -259,9 +275,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def auto_acquisition_osc(self):
         try:
-            time_to_resonance = 10 # s
-            acquisition_time = 14 # s
-            acquisition_range = 1 # V
+            time_to_resonance = 8 # s
+            acquisition_time = 12 # s
+            acquisition_range = 0.5 # V
                     
             self.osc.Set_vertical_range(acquisition_range)
             self.plot_widget_osc.setRange(yRange=(0, acquisition_range))
