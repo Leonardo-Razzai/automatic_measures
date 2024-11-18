@@ -30,12 +30,13 @@ def charge_MOT(t, V0, tau, off):
     return off + V0 * (1 - np.exp(-t/tau))
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, ctx: Context, osc: iapp.Osc_RS):
+    def __init__(self, ctx: Context, osc: iapp.Osc_RS, func_gen: iapp.Func_Gen):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ctx = ctx
         self.osc = osc
+        self.func_gen = func_gen
         
         self.x_osc = np.array([])
         self.y_osc = np.array([])
@@ -290,10 +291,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self.osc.Stop_acquisition()
             self.osc.Start_acquisition()
             
+            time.sleep(1)
+            # Swicth ON Magnetic field
+            self.func_gen.Set_Amp(5) # V
+            self.func_gen.Set_Freq(0.1) # Hz
+            self.func_gen.Set_Offset(2.5) # V
+            self.func_gen.Set_Output('ON')
+            
             time.sleep(time_to_resonance)
+            
             if self.ui.swipe_to_res_checkBox.isChecked():
                 self.go_to_resonance()
                 print('Freq set to resonance')
+            
+            # Swicth OFF Magnetic field
+            self.func_gen.Set_Output('OFF')
             
             time.sleep(acquisition_time - time_to_resonance + 1)
             self.x_auto, self.y_auto = self.get_data_osc()
@@ -341,14 +353,17 @@ if __name__ == "__main__":
     try:
         ctx = Context('pva')
         osc = iapp.Osc_RS()
+        func_gen = iapp.Func_Gen()
     except Exception as e:
         # Handle any exception here
         print(f"An error occurred: {e}")
         ctx = None
         osc = None
+        func_gen = None
+        
 
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow(ctx=ctx, osc=osc)
+    window = MainWindow(ctx=ctx, osc=osc, func_gen=func_gen)
     window.show()
     sys.exit(app.exec_())
 
