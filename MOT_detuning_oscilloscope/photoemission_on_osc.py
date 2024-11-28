@@ -26,8 +26,8 @@ GAMMA = 5.88 # MHz
 DEFAULT_VOLTAGE_RANGE = 0.5 # V
 DEFAULT_TIME_RANGE = 10 # s
 
-def charge_MOT(t, V0, tau, off):
-    return off + V0 * (1 - np.exp(-t/tau))
+def charge_MOT(t, V0, tau, t0):
+    return V0 * (1 - np.exp(-(t-t0)/tau))
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, ctx: Context, osc: iapp.Osc_RS, func_gen: iapp.Func_Gen):
@@ -49,6 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.start_time_fit = 5.0 #s
         self.end_time_fit = 10.0 # s
+        self.mot_offset = 0.0
         self.fit_params = None
         self.fit_errors = None
         
@@ -100,6 +101,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.time_box.setDecimals(2)  # Allow 2 decimal places (0.01 precision)
         self.ui.time_box.setSingleStep(0.01)  # Set step size to 0.01 s
         self.ui.time_box.setValue(DEFAULT_TIME_RANGE)
+        
+        # Set up the spin box for frequency input
+        self.ui.freq_photo_box.setRange(900, 1200)  # Minimum 0.01, Maximum 9999
+        self.ui.freq_photo_box.setDecimals(2)  # Allow 2 decimal places (0.01 precision)
+        self.ui.freq_photo_box.setSingleStep(0.01)  # Set step size to 0.01
+        self.ui.freq_photo_box.setValue(COOLER_MOT_FREQ)
 
         # # Connect buttons
         self.ui.set_freq_button.clicked.connect(self.set_beat_note_freq)
@@ -118,7 +125,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Tab Acquisistion
         self.ui.auto_acquire_button.clicked.connect(self.auto_acquisition_osc) # plot data from auto-acquisition on oscilloscope
         self.ui.save_acquisition_button.clicked.connect(self.save_auto)
-        self.ui.num_atoms_button.clicked.connect(self.compute_num_atoms)
         
         # Tab Fit
         self.ui.set_range_time_fit_button.clicked.connect(self.set_range_time_for_fit)
@@ -171,7 +177,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print('Using test data')
             x_data = np.linspace(0, self.time_range, 200)
-            y_data = charge_MOT(x_data, self.voltage_range * 3/4, self.time_range / 10, 0.0) + 0.01 * np.random.randn(200)
+            y_data = charge_MOT(x_data, self.voltage_range * 3/4, self.time_range / 15, self.time_range/3) + 0.01 * np.random.randn(200)
             data = (x_data, y_data)
             
         return data
@@ -181,6 +187,13 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def go_to_optimal(self):
         self.ctx.put('CoolLas:RFLock:FR', COOLER_MOT_FREQ * 1e3) # in kHz
+    
+    def go_to_freq(self, freq):
+        '''Set a value for cooler beat-note in MHz'''
+        if freq > 900 and freq < 1200:
+            self.ctx.put('CoolLas:RFLock:FR', freq * 1e3) # in kHz
+        else:
+            print('Frequency is out of range [900, 1200] MHz')
             
     def update_plot_osc(self):
         """Update the osc plot with new data."""
@@ -200,27 +213,28 @@ class MainWindow(QtWidgets.QMainWindow):
         """Fit the data from the oscilloscope with an exponential and plot the result."""
         # Select data for fitting based on start time
         index_fit = (self.x_auto > self.start_time_fit) * (self.x_auto < self.end_time_fit)
-        x_data = self.x_auto[index_fit] - self.start_time_fit
-        y_data = self.y_auto[index_fit]
+        x_data = self.x_auto[index_fit]
+        index_offset = self.x_auto < self.start_time_fit/2
+        self.mot_offset = np.mean(self.y_auto[index_offset])
+        y_data = self.y_auto[index_fit] - self.mot_offset
         
         # Define initial parameter guesses
         sat_guess = np.mean(y_data)
-        tau_guess = 2  # s
-        offset_guess = np.min(self.y_auto)  # Set offset close to minimum value
+        tau_guess = 1  # s
         
         # Perform curve fitting with initial guesses
-        p0 = [sat_guess, tau_guess, offset_guess]
+        p0 = [sat_guess, tau_guess, self.start_time_fit]
         popt, pcov = curve_fit(charge_MOT, x_data, y_data, p0=p0)
-        V0, tau, off = popt
-        dV0, dtau, doff = np.sqrt(np.diag(pcov))  # Uncertainties in fit parameters
+        V0, tau, t0 = popt
+        dV0, dtau, dt0 = np.sqrt(np.diag(pcov))  # Uncertainties in fit parameters
         
         self.fit_params = popt
         self.fit_errors = np.sqrt(np.diag(pcov))
         
-        print(f'\n V0 = ({V0:.4f} {pm} {dV0:.4f}) V \n tau = ({tau:.4f} {pm} {dtau:.4f}) s \n offset = ({off:.4f} {pm} {doff:.4f}) V')
+        print(f'\n V0 = ({V0:.4f} {pm} {dV0:.4f}) V \n tau = ({tau:.4f} {pm} {dtau:.4f}) s \n t0 = ({t0:.4f} {pm} {dt0:.4f}) s')
         
         # Generate fitted curve data
-        self.x_fit = x_data + self.start_time_fit  # Shift back to original time axis
+        self.x_fit = x_data
         self.y_fit = charge_MOT(x_data, *popt)
         
         # Plot the fit on the dedicated fit plot widget
@@ -231,13 +245,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # Plot the acquired data (x_auto, y_auto) in the fit plot widget
         self.plot_widget_fit.clear()  # Clear any previous data or fits
          # Create or update the TextItem with fit results
-        V0, tau, off = self.fit_params
-        dV0, dtau, doff = self.fit_errors 
+        V0, tau, t0 = self.fit_params
+        dV0, dtau, dt0 = self.fit_errors 
         
         fit_results_text = (
             f"V0 = ({V0:.4f} {pm} {dV0:.4f}) V\n"
             f"tau = ({tau:.4f} {pm} {dtau:.4f}) s\n"
-            f"offset = ({off:.4f} {pm} {doff:.4f}) V"
+            f"t0 = ({t0:.4f} {pm} {dt0:.4f}) s"
         )
         
         self.fit_text_item = pg.TextItem(fit_results_text, anchor=(0, 1), color='w', border='w', fill='k')
@@ -246,7 +260,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Adjust the position of the TextItem on the plot to ensure visibility
         self.fit_text_item.setPos(0, 0.75 * self.voltage_range)
 
-        self.plot_widget_fit.plot(self.x_auto, self.y_auto, pen='b', name="Data")  # Original data in blue
+        self.plot_widget_fit.plot(self.x_auto, self.y_auto - self.mot_offset, pen='b', name="Data")  # Original data in blue
         
         # Plot the fitted curve over the data
         self.plot_widget_fit.plot(self.x_fit, self.y_fit, pen='r', name="Fit")  # Fit in red
@@ -301,9 +315,11 @@ class MainWindow(QtWidgets.QMainWindow):
             time.sleep(time_to_resonance)
             
             if self.ui.swipe_to_res_checkBox.isChecked():
-                self.go_to_resonance()
-                print('Freq set to resonance')
-            
+                # Change beat note cooler to the set value (photo)
+                Freq = self.ui.freq_photo_box.value()
+                self.go_to_freq(Freq)
+                print(f'Photo at {Freq:.2f} MHz')
+                
             # Swicth OFF Magnetic field
             self.func_gen.Set_Output('OFF')
             
@@ -318,11 +334,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 print('Freq set to resonance')
                 
             print('Using test data')
-            x_data = np.linspace(0, self.time_range, 200)
-            t0 = 0.01 * np.random.randn() + self.time_range / 2
+            N_data = 500
+            x_data = np.linspace(0, self.time_range, N_data)
+            t0 = 0.01 * np.random.randn() + self.time_range / 3
             index_larger_t0 = x_data > t0
-            y_data = np.zeros(200)
-            y_data = y_data + charge_MOT(x_data - t0, self.voltage_range * 3/4, self.time_range / 10, 0.05) * index_larger_t0 + 0.01 * np.random.randn(200)
+            y_data = np.ones(N_data) * self.voltage_range/7
+            y_data = y_data + charge_MOT(x_data, self.voltage_range * 3/4, tau=self.time_range/15, t0=t0) * index_larger_t0 + 0.01 * np.random.randn(N_data)
             self.x_auto = x_data
             self.y_auto = y_data
             self.update_auto_plot()
