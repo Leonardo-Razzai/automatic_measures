@@ -29,6 +29,23 @@ DEFAULT_TIME_RANGE = 10 # s
 def charge_MOT(t, V0, tau, t0):
     return V0 * (1 - np.exp(-(t-t0)/tau))
 
+def Prob_photoemission(Delta, s0, Gamma):
+  return s0/2 / (1 + s0 + 4 * Delta**2 / Gamma**2)
+
+def NumOfAtoms(V0, Delta, s0, Gamma):
+  tau = 2.38 *1e6 # V/A 5% error
+  eta = 0.5 # A/W 10 % error
+  R_lens = 2 # cm
+  dist_mot = 40 # cm
+  sigma = np.pi * (R_lens/dist_mot)**2
+  Gamma_fund = 5.88 * 1e6 # Hz
+  Ep = 1.589 * 1.602 * 1e-19 # J
+  
+  I = V0 / tau # A
+  P = I / eta # W
+  
+  return P / (sigma * Prob_photoemission(Delta, s0, Gamma) * Gamma_fund/2 * Ep)
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, ctx: Context, osc: iapp.Osc_RS, func_gen: iapp.Func_Gen):
         super().__init__()
@@ -247,11 +264,12 @@ class MainWindow(QtWidgets.QMainWindow):
          # Create or update the TextItem with fit results
         V0, tau, t0 = self.fit_params
         dV0, dtau, dt0 = self.fit_errors 
-        
+
         fit_results_text = (
             f"V0 = ({V0:.4f} {pm} {dV0:.4f}) V\n"
             f"tau = ({tau:.4f} {pm} {dtau:.4f}) s\n"
-            f"t0 = ({t0:.4f} {pm} {dt0:.4f}) s"
+            f"t0 = ({t0:.4f} {pm} {dt0:.4f}) s\n\n"
+            #f"N = ({Num/1e8:.2f} {pm} {dNum}) " + r"$\cdot 10^8"
         )
         
         self.fit_text_item = pg.TextItem(fit_results_text, anchor=(0, 1), color='w', border='w', fill='k')
@@ -286,13 +304,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def compute_num_atoms(self):
         """Compute num of atoms from photo-voltage"""
         self.fit_data()
-        self.plot_fit_over_data
+        self.plot_fit_over_data()
         
     def auto_acquisition_osc(self):
         try:
-            time_to_resonance = 8 # s
-            acquisition_time = 12 # s
-            acquisition_range = 0.5 # V
+            time_to_resonance = 6 # s
+            acquisition_time = 8 # s
+            acquisition_range = 0.4 # V
                     
             self.osc.Set_vertical_range(acquisition_range)
             self.plot_widget_osc.setRange(yRange=(0, acquisition_range))
@@ -305,12 +323,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.osc.Stop_acquisition()
             self.osc.Start_acquisition()
             
-            time.sleep(1)
-            # Swicth ON Magnetic field
-            self.func_gen.Set_Amp(5) # V
-            self.func_gen.Set_Freq(0.1) # Hz
-            self.func_gen.Set_Offset(2.5) # V
-            self.func_gen.Set_Output('ON')
+            # time.sleep(1)
+            # # Swicth ON Magnetic field
+            # self.func_gen.Set_Amp(5) # V
+            # self.func_gen.Set_Freq(0.1) # Hz
+            # self.func_gen.Set_Offset(2.5) # V
+            # self.func_gen.Set_Output('ON')
             
             time.sleep(time_to_resonance)
             
@@ -321,7 +339,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(f'Photo at {Freq:.2f} MHz')
                 
             # Swicth OFF Magnetic field
-            self.func_gen.Set_Output('OFF')
+            #self.func_gen.Set_Output('OFF')
             
             time.sleep(acquisition_time - time_to_resonance + 1)
             self.x_auto, self.y_auto = self.get_data_osc()
@@ -370,7 +388,7 @@ if __name__ == "__main__":
     try:
         ctx = Context('pva')
         osc = iapp.Osc_RS()
-        func_gen = iapp.Func_Gen()
+        func_gen = None #iapp.Func_Gen()
     except Exception as e:
         # Handle any exception here
         print(f"An error occurred: {e}")
