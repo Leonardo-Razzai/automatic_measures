@@ -32,7 +32,7 @@ def charge_MOT(t, V0, tau, t0):
 def Prob_photoemission(Delta, s0, Gamma):
   return s0/2 / (1 + s0 + 4 * Delta**2 / Gamma**2)
 
-def NumOfAtoms(V0, Delta, s0, Gamma):
+def NumOfAtoms(V0, dV0, Delta, s0, Gamma):
   tau = 2.38 *1e6 # V/A 5% error
   eta = 0.5 # A/W 10 % error
   R_lens = 2 # cm
@@ -44,7 +44,17 @@ def NumOfAtoms(V0, Delta, s0, Gamma):
   I = V0 / tau # A
   P = I / eta # W
   
-  return P / (sigma * Prob_photoemission(Delta, s0, Gamma) * Gamma_fund/2 * Ep)
+  # relative errors
+  dV0_rel = dV0/V0
+  dtau_rel = 0.05
+  deta_rel = 0.1
+  ddist_mot_rel = 2 / 40
+  dsigma_rel = 2 * ddist_mot_rel
+  
+  Na = P / (sigma * Prob_photoemission(Delta, s0, Gamma) * Gamma_fund * Ep)
+  dNa = (dV0_rel + dtau_rel + deta_rel + dsigma_rel) * Na
+  
+  return (Na, dNa)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, ctx: Context, osc: iapp.Osc_RS, func_gen: iapp.Func_Gen):
