@@ -149,7 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.plot_osc_button.clicked.connect(self.update_plot_osc) # plot data from oscilloscope
         self.ui.save_osc_button.clicked.connect(self.save_osc)
         
-        # Tab Acquisistion
+        # Tab Meas. Lorentzian
         self.ui.auto_acquire_button.clicked.connect(self.auto_acquisition_osc) # plot data from auto-acquisition on oscilloscope
         self.ui.save_acquisition_button.clicked.connect(self.save_auto)
         
@@ -157,6 +157,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.set_range_time_fit_button.clicked.connect(self.set_range_time_for_fit)
         self.ui.fit_button.clicked.connect(self.fit_data)
         self.ui.save_data_fit_button.clicked.connect(self.save_data_fit)
+        
+        # Tam Num. Atoms
+        self.ui.num_atoms_button.clicked.connect(self.compute_num_atoms)
         
     def set_beat_note_freq(self):
         '''Set Cooler frequency with value from UI'''
@@ -312,15 +315,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.file_name_fit_input.clear()
     
     def compute_num_atoms(self):
-        """Compute num of atoms from photo-voltage"""
-        self.fit_data()
-        self.plot_fit_over_data()
-        
+        """Compute num of atoms from photo-voltage at resonance"""
+        V0 = np.max(self.y_auto) - np.mean
     def auto_acquisition_osc(self):
         try:
-            time_to_resonance = 6 # s
-            acquisition_time = 8 # s
-            acquisition_range = 0.4 # V
+            acquisition_time = self.time_range # s
+            time_to_resonance = acquisition_time - 1 # s
+            acquisition_range = 0.2 # V
                     
             self.osc.Set_vertical_range(acquisition_range)
             self.plot_widget_osc.setRange(yRange=(0, acquisition_range))

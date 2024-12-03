@@ -104,9 +104,9 @@ p, li { white-space: pre-wrap; }
    <widget class="QTextBrowser" name="textBrowser_2">
     <property name="geometry">
      <rect>
-      <x>484</x>
+      <x>470</x>
       <y>20</y>
-      <width>111</width>
+      <width>121</width>
       <height>21</height>
      </rect>
     </property>
@@ -260,11 +260,11 @@ p, li { white-space: pre-wrap; }
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>Acquisition</string>
+      <string>Meas. Lorentzian</string>
      </attribute>
      <widget class="QWidget" name="verticalLayoutWidget_2">
       <property name="geometry">
@@ -333,7 +333,7 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>155</x>
-        <y>12</y>
+        <y>13</y>
         <width>16</width>
         <height>17</height>
        </rect>
@@ -358,8 +358,8 @@ p, li { white-space: pre-wrap; }
      <widget class="QLabel" name="label_6">
       <property name="geometry">
        <rect>
-        <x>190</x>
-        <y>10</y>
+        <x>180</x>
+        <y>11</y>
         <width>51</width>
         <height>20</height>
        </rect>
@@ -371,7 +371,7 @@ p, li { white-space: pre-wrap; }
      <widget class="QDoubleSpinBox" name="freq_photo_box">
       <property name="geometry">
        <rect>
-        <x>240</x>
+        <x>230</x>
         <y>10</y>
         <width>62</width>
         <height>22</height>
@@ -450,7 +450,7 @@ p, li { white-space: pre-wrap; }
        </rect>
       </property>
       <property name="text">
-       <string>Start Time [s]:</string>
+       <string>Start Fit [s]:</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_3">
@@ -463,7 +463,7 @@ p, li { white-space: pre-wrap; }
        </rect>
       </property>
       <property name="text">
-       <string>End Time [s]:</string>
+       <string>End Fit [s]:</string>
       </property>
      </widget>
      <widget class="QPushButton" name="save_data_fit_button">
@@ -503,6 +503,130 @@ p, li { white-space: pre-wrap; }
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab_7">
+     <attribute name="title">
+      <string>Num. Atoms</string>
+     </attribute>
+     <widget class="QLabel" name="label_19">
+      <property name="geometry">
+       <rect>
+        <x>570</x>
+        <y>10</y>
+        <width>61</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>File Name:</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_8">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>40</y>
+        <width>861</width>
+        <height>251</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="plot_num_atoms"/>
+     </widget>
+     <widget class="QLineEdit" name="file_name_num_atoms_input">
+      <property name="geometry">
+       <rect>
+        <x>623</x>
+        <y>10</y>
+        <width>141</width>
+        <height>20</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="num_atoms_button">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>10</y>
+        <width>71</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Num. Atoms</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="save_data_num_atoms_button">
+      <property name="geometry">
+       <rect>
+        <x>770</x>
+        <y>10</y>
+        <width>81</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Save Data</string>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="end_time_back_box">
+      <property name="geometry">
+       <rect>
+        <x>216</x>
+        <y>9</y>
+        <width>61</width>
+        <height>22</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="start_time_back_box">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>9</y>
+        <width>61</width>
+        <height>22</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_27">
+      <property name="geometry">
+       <rect>
+        <x>150</x>
+        <y>9</y>
+        <width>71</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>End Back [s]:</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="set_back_time_button">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>9</y>
+        <width>91</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Set Bkgnd Range</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_28">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>71</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Start Back [s]:</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <zorder>textBrowser_7</zorder>
    <zorder>textBrowser_3</zorder>
@@ -513,7 +637,6 @@ p, li { white-space: pre-wrap; }
    <zorder>freq_box</zorder>
    <zorder>set_freq_button</zorder>
    <zorder>set_time_button</zorder>
-   <zorder>time_box</zorder>
    <zorder>set_voltage_button</zorder>
    <zorder>voltage_box</zorder>
    <zorder>start_button</zorder>
@@ -523,6 +646,7 @@ p, li { white-space: pre-wrap; }
    <zorder>save_osc_button</zorder>
    <zorder>file_name_osc_input</zorder>
    <zorder>tabWidget</zorder>
+   <zorder>time_box</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
