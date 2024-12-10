@@ -19,12 +19,15 @@ This program is meant to interface the oscilloscope and the cooler lock, in orde
 - change detuning of cooler
 - acquire photoemission at resonace on the 
 '''
-COOLER_MOT_FREQ = 1042# MHz
-COOLER_RES_FREQ = 1027# MHz
+COOLER_MOT_FREQ = 1010 # MHz (for master on 2'-4')
+COOLER_RES_FREQ = 995 # MHz (for master on 2'-4')
 GAMMA = 5.88 # MHz
 
-DEFAULT_VOLTAGE_RANGE = 0.5 # V
-DEFAULT_TIME_RANGE = 10 # s
+DEFAULT_VOLTAGE_RANGE = 0.25 # V
+DEFAULT_TIME_RANGE = 8 # s
+
+# True if Func gen is connected via ethernet
+FUNC_GEN_ON = True
 
 def charge_MOT(t, V0, tau, t0):
     return V0 * (1 - np.exp(-(t-t0)/tau))
@@ -129,11 +132,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.time_box.setSingleStep(0.01)  # Set step size to 0.01 s
         self.ui.time_box.setValue(DEFAULT_TIME_RANGE)
         
-        # Set up the spin box for frequency input
+        # Set up the spin box for frequency photo input
         self.ui.freq_photo_box.setRange(900, 1200)  # Minimum 0.01, Maximum 9999
         self.ui.freq_photo_box.setDecimals(2)  # Allow 2 decimal places (0.01 precision)
         self.ui.freq_photo_box.setSingleStep(0.01)  # Set step size to 0.01
         self.ui.freq_photo_box.setValue(COOLER_MOT_FREQ)
+        
+        # Set up the spin box for frequency mot charge input
+        self.ui.freq_optimal_box.setRange(900, 1200)  # Minimum 0.01, Maximum 9999
+        self.ui.freq_optimal_box.setDecimals(2)  # Allow 2 decimal places (0.01 precision)
+        self.ui.freq_optimal_box.setSingleStep(0.01)  # Set step size to 0.01
+        self.ui.freq_optimal_box.setValue(COOLER_MOT_FREQ)
 
         # # Connect buttons
         self.ui.set_freq_button.clicked.connect(self.set_beat_note_freq)
@@ -316,12 +325,14 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def compute_num_atoms(self):
         """Compute num of atoms from photo-voltage at resonance"""
-        V0 = np.max(self.y_auto) - np.mean
+        #V0 = np.max(self.y_auto) - np.mean
+        
     def auto_acquisition_osc(self):
         try:
             acquisition_time = self.time_range # s
-            time_to_resonance = acquisition_time - 1 # s
-            acquisition_range = 0.2 # V
+            offset_time = 1 # s
+            mot_time = acquisition_time - 2 * offset_time # s
+            acquisition_range = self.voltage_range # V
                     
             self.osc.Set_vertical_range(acquisition_range)
             self.plot_widget_osc.setRange(yRange=(0, acquisition_range))
@@ -334,28 +345,31 @@ class MainWindow(QtWidgets.QMainWindow):
             self.osc.Stop_acquisition()
             self.osc.Start_acquisition()
             
-            # time.sleep(1)
-            # # Swicth ON Magnetic field
-            # self.func_gen.Set_Amp(5) # V
-            # self.func_gen.Set_Freq(0.1) # Hz
-            # self.func_gen.Set_Offset(2.5) # V
-            # self.func_gen.Set_Output('ON')
+            if FUNC_GEN_ON:
+                time.sleep(offset_time)
+                # Swicth ON Magnetic field
+                self.func_gen.Set_Amp(5) # V
+                self.func_gen.Set_Freq(0.1) # Hz
+                self.func_gen.Set_Offset(2.5) # V
+                self.func_gen.Set_Output('ON')
             
-            time.sleep(time_to_resonance)
+            time.sleep(mot_time)
             
             if self.ui.swipe_to_res_checkBox.isChecked():
                 # Change beat note cooler to the set value (photo)
                 Freq = self.ui.freq_photo_box.value()
                 self.go_to_freq(Freq)
                 print(f'Photo at {Freq:.2f} MHz')
-                
-            # Swicth OFF Magnetic field
-            #self.func_gen.Set_Output('OFF')
             
-            time.sleep(acquisition_time - time_to_resonance + 1)
+            time.sleep(offset_time)
+            
             self.x_auto, self.y_auto = self.get_data_osc()
             self.update_auto_plot()
-            self.go_to_optimal()
+            if FUNC_GEN_ON: 
+                # Swicth OFF Magnetic field
+                self.func_gen.Set_Output('OFF')
+                
+            self.go_to_freq(self.ui.freq_optimal_box.value())
             
         except Exception as e:
             
@@ -399,10 +413,10 @@ if __name__ == "__main__":
     try:
         ctx = Context('pva')
         osc = iapp.Osc_RS()
-        func_gen = None #iapp.Func_Gen()
+        func_gen = iapp.Func_Gen()
     except Exception as e:
         # Handle any exception here
-        print(f"An error occurred: {e}")
+        print(f"An error occurred:\n {e}")
         ctx = None
         osc = None
         func_gen = None

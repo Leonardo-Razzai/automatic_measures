@@ -260,7 +260,7 @@ p, li { white-space: pre-wrap; }
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -372,6 +372,29 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>230</x>
+        <y>10</y>
+        <width>62</width>
+        <height>22</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_7">
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>11</y>
+        <width>61</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>BN Optimal:</string>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="freq_optimal_box">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
         <y>10</y>
         <width>62</width>
         <height>22</height>

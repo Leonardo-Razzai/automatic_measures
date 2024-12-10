@@ -111,6 +111,12 @@ class Ui_MainWindow(object):
         self.freq_photo_box = QtWidgets.QDoubleSpinBox(self.tab)
         self.freq_photo_box.setGeometry(QtCore.QRect(230, 10, 62, 22))
         self.freq_photo_box.setObjectName("freq_photo_box")
+        self.label_7 = QtWidgets.QLabel(self.tab)
+        self.label_7.setGeometry(QtCore.QRect(300, 11, 61, 20))
+        self.label_7.setObjectName("label_7")
+        self.freq_optimal_box = QtWidgets.QDoubleSpinBox(self.tab)
+        self.freq_optimal_box.setGeometry(QtCore.QRect(360, 10, 62, 22))
+        self.freq_optimal_box.setObjectName("freq_optimal_box")
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
@@ -213,7 +219,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -253,6 +259,7 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "Photo:"))
         self.label_4.setText(_translate("MainWindow", "File Name:"))
         self.label_6.setText(_translate("MainWindow", "BN Photo:"))
+        self.label_7.setText(_translate("MainWindow", "BN Optimal:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Meas. Lorentzian"))
         self.fit_button.setText(_translate("MainWindow", "Fit"))
         self.set_range_time_fit_button.setText(_translate("MainWindow", "Set Fit Range"))
