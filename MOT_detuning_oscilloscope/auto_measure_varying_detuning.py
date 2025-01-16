@@ -19,7 +19,7 @@ COOLER_MOT_FREQ = 1036 # MHz (for master on 3'-4') ; 1010 MHz (for master on 2'-
 COOLER_RES_FREQ = 1027 # MHz (for master on 3'-4') ; 995 MHz (for master on 3'-4')
 GAMMA = 5.88 # MHz
 
-DEFAULT_VOLTAGE_RANGE = 0.22 # V
+DEFAULT_VOLTAGE_RANGE = 0.15 # V
 DEFAULT_TIME_RANGE = 6 # s
 TIME_MOT = 4
 OFF_TIME = (DEFAULT_TIME_RANGE-TIME_MOT) / 2

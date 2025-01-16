@@ -349,7 +349,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 time.sleep(offset_time)
                 # Swicth ON Magnetic field
                 self.func_gen.Set_Amp(5) # V
-                self.func_gen.Set_Freq(0.1) # Hz
+                self.func_gen.Set_Freq(0.01) # Hz
                 self.func_gen.Set_Offset(2.5) # V
                 self.func_gen.Set_Output('ON')
             
