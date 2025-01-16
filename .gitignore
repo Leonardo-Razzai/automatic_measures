@@ -7,3 +7,4 @@ __pycache__
 .venv/share
 .venv/pyvenv.cfg
 !.venv/Lib/site-packages/interface_app/Interface_app.py
+GITHUB_TOKEN.txt
