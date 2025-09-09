@@ -1,15 +1,3 @@
----
-
-# 📷 Dual uEye Camera Overlap Integral
-
-This project uses **two IDS uEye cameras** (tested with **DCC1545M-GL**) to:
-
-* Stream both cameras side-by-side in a resizable OpenCV window
-* Scale the display to match the width of your monitor
-* Compute and plot the **overlap integral** (similarity) between the two images in real time
-
----
-
 ## 🚀 Features
 
 * Works with **uEye SDK** + **pyueye**
